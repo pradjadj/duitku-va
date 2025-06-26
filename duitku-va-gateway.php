@@ -13,24 +13,19 @@
  * WC tested up to: 9.8
  */
 
-// Prevent direct access
 if (!defined('ABSPATH')) {
     exit;
 }
 
-// Define plugin constants
 define('DUITKU_VA_VERSION', '1.0');
 define('DUITKU_VA_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('DUITKU_VA_PLUGIN_PATH', plugin_dir_path(__FILE__));
 
-// Declare HPOS compatibility
 add_action('before_woocommerce_init', function() {
     if (class_exists('\Automattic\WooCommerce\Utilities\FeaturesUtil')) {
         \Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility('custom_order_tables', __FILE__, true);
     }
 });
-
-
 
 class Duitku_VA_Gateway_Main {
     
@@ -42,32 +37,20 @@ class Duitku_VA_Gateway_Main {
     }
     
     public function init() {
-        // Check if WooCommerce is active
         if (!class_exists('WooCommerce')) {
             add_action('admin_notices', array($this, 'woocommerce_missing_notice'));
             return;
         }
         
-        // Load plugin files
         $this->load_files();
-        
-        // Initialize gateways
         add_filter('woocommerce_payment_gateways', array($this, 'add_gateways'));
-        
-        // Initialize admin settings
         $this->init_admin();
-        
-        // Enqueue scripts
         add_action('wp_enqueue_scripts', array($this, 'enqueue_scripts'));
+        add_action('woocommerce_api_wc_duitku_pg', array($this, 'handle_callback'));
         
-        // Handle callback
-        add_action('init', array($this, 'handle_callback'));
-        
-        // AJAX handlers
         add_action('wp_ajax_duitku_check_payment_status', array($this, 'ajax_check_payment_status'));
         add_action('wp_ajax_nopriv_duitku_check_payment_status', array($this, 'ajax_check_payment_status'));
         
-        // Cron job for expired orders
         add_action('duitku_check_expired_orders', array($this, 'check_expired_orders'));
         if (!wp_next_scheduled('duitku_check_expired_orders')) {
             wp_schedule_event(time(), 'hourly', 'duitku_check_expired_orders');
@@ -75,14 +58,12 @@ class Duitku_VA_Gateway_Main {
     }
     
     public function load_files() {
-        // Load core classes
         require_once DUITKU_VA_PLUGIN_PATH . 'includes/class-duitku-logger.php';
         require_once DUITKU_VA_PLUGIN_PATH . 'includes/class-duitku-base-gateway.php';
         require_once DUITKU_VA_PLUGIN_PATH . 'includes/api/class-duitku-api.php';
         require_once DUITKU_VA_PLUGIN_PATH . 'includes/api/class-duitku-callback.php';
         require_once DUITKU_VA_PLUGIN_PATH . 'includes/admin/class-duitku-admin-settings.php';
         
-        // Load gateway classes
         require_once DUITKU_VA_PLUGIN_PATH . 'includes/gateways/class-duitku-bni-gateway.php';
         require_once DUITKU_VA_PLUGIN_PATH . 'includes/gateways/class-duitku-bri-gateway.php';
         require_once DUITKU_VA_PLUGIN_PATH . 'includes/gateways/class-duitku-mandiri-gateway.php';
@@ -132,9 +113,18 @@ class Duitku_VA_Gateway_Main {
     }
     
     public function handle_callback() {
-        if (isset($_GET['duitku_callback']) && $_GET['duitku_callback'] === '1') {
+        header('Content-Type: application/json');
+        
+        try {
             $callback = new Duitku_Callback();
             $callback->handle_callback();
+        } catch (Exception $e) {
+            $logger = Duitku_Logger::get_instance();
+            $logger->error('Callback processing failed: ' . $e->getMessage());
+            
+            http_response_code(400);
+            echo json_encode(array('error' => $e->getMessage()));
+            exit;
         }
     }
     
@@ -145,19 +135,16 @@ class Duitku_VA_Gateway_Main {
     }
     
     public function activate() {
-        // Create database tables if needed
         $this->create_tables();
     }
     
     public function deactivate() {
-        // Clear scheduled cron job
         wp_clear_scheduled_hook('duitku_check_expired_orders');
     }
     
     public function check_expired_orders() {
         global $wpdb;
         
-        // Get pending orders with expired payment time
         $pending_orders = $wpdb->get_results(
             $wpdb->prepare(
                 "SELECT order_id FROM {$wpdb->prefix}duitku_transactions 
@@ -180,13 +167,11 @@ class Duitku_VA_Gateway_Main {
                 continue;
             }
             
-            // Update order status to cancelled
             $order->update_status(
                 'cancelled',
                 __('Order automatically cancelled due to payment expiration.', 'woocommerce')
             );
             
-            // Update transaction status in custom table
             $wpdb->update(
                 $wpdb->prefix . 'duitku_transactions',
                 array('status' => 'cancelled'),
@@ -206,7 +191,6 @@ class Duitku_VA_Gateway_Main {
         global $wpdb;
         
         $table_name = $wpdb->prefix . 'duitku_transactions';
-        
         $charset_collate = $wpdb->get_charset_collate();
         
         $sql = "CREATE TABLE $table_name (
@@ -248,7 +232,6 @@ class Duitku_VA_Gateway_Main {
             return;
         }
         
-        // Check if order is already completed or cancelled - don't hit API
         if ($order->has_status('completed')) {
             $gateway = WC()->payment_gateways->payment_gateways()[$order->get_payment_method()];
             wp_send_json_success(array(
@@ -272,7 +255,6 @@ class Duitku_VA_Gateway_Main {
             return;
         }
         
-        // Get payment method instance
         $payment_method = $order->get_payment_method();
         $available_gateways = WC()->payment_gateways->payment_gateways();
         
@@ -283,7 +265,6 @@ class Duitku_VA_Gateway_Main {
         
         $gateway = $available_gateways[$payment_method];
         
-        // Only hit API if order is still pending
         if (!$order->has_status('pending')) {
             wp_send_json_success(array(
                 'status' => $order->get_status(),
@@ -295,9 +276,8 @@ class Duitku_VA_Gateway_Main {
             return;
         }
         
-        // Check transaction status via API only for pending orders
         $merchant_settings = get_option('duitku_settings', array());
-        $prefix = isset($merchant_settings['merchant_order_prefix']) ? $merchant_settings['merchant_order_prefix'] : 'DPAY-';
+        $prefix = isset($merchant_settings['merchant_order_prefix']) ? $merchant_settings['merchant_order_prefix'] : 'TRX-';
         $merchant_order_id = $prefix . $order_id;
         $api = new Duitku_API();
         $response = $api->check_transaction_status($merchant_order_id);
@@ -310,19 +290,13 @@ class Duitku_VA_Gateway_Main {
         $status = '';
         $redirect_url = '';
         
-        // Process response
         if (isset($response['statusCode'])) {
             switch ($response['statusCode']) {
                 case '00':
-                    // Payment success
                     if (!$order->has_status('completed')) {
-                        // Check if payment has been recorded
                         $recorded_reference = $order->get_meta('_duitku_payment_reference');
                         if (empty($recorded_reference)) {
-                            // Set payment reference first
                             $order->update_meta_data('_duitku_payment_reference', $response['reference']);
-                            
-                            // Update status to processing (modern way without deprecated hooks)
                             $order->set_status('processing', sprintf(
                                 __('Payment completed via Duitku. Reference: %s', 'woocommerce'),
                                 $response['reference']
@@ -335,7 +309,6 @@ class Duitku_VA_Gateway_Main {
                     break;
                     
                 case '01':
-                    // Payment pending
                     if (!$order->has_status('pending')) {
                         $order->update_status('pending', __('Awaiting payment confirmation from Duitku.', 'woocommerce'));
                     }
@@ -343,7 +316,6 @@ class Duitku_VA_Gateway_Main {
                     break;
                     
                 case '02':
-                    // Payment cancelled/expired
                     if ($order->has_status('pending')) {
                         $order->update_status('cancelled', __('Payment cancelled or expired.', 'woocommerce'));
                     }
@@ -356,7 +328,6 @@ class Duitku_VA_Gateway_Main {
             }
         }
         
-        // Get updated VA number and expiry time
         $va_number = $order->get_meta('_va_number');
         $expiry = $order->get_meta('_payment_expiry');
         $expiry_timestamp = strtotime($expiry);
@@ -371,5 +342,4 @@ class Duitku_VA_Gateway_Main {
     }
 }
 
-// Initialize the plugin
 new Duitku_VA_Gateway_Main();

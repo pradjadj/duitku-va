@@ -17,28 +17,22 @@ abstract class Duitku_Base_Gateway extends WC_Payment_Gateway {
         $this->logger = Duitku_Logger::get_instance();
         $this->merchant_settings = get_option('duitku_settings', array());
 
-        // Enforce 24-hour expiry period (1440 minutes) if not set
         if (empty($this->merchant_settings['expiry_period'])) {
             $this->merchant_settings['expiry_period'] = 1440;
         }
         
-        // Common gateway settings
         $this->has_fields = false;
         $this->order_button_text = __('Place order', 'woocommerce');
         
-        // Load settings
         $this->init_form_fields();
         $this->init_settings();
         
-        // Define properties
         $this->enabled = $this->get_option('enabled');
         $this->title = $this->get_option('title');
         $this->description = $this->get_option('description');
         
-        // Actions
         add_action('woocommerce_update_options_payment_gateways_' . $this->id, array($this, 'process_admin_options'));
         add_action('woocommerce_thankyou_' . $this->id, array($this, 'thank_you_page'));
-        add_action('woocommerce_api_' . $this->id, array($this, 'handle_callback'));
     }
     
     public function init_form_fields() {
@@ -70,26 +64,17 @@ abstract class Duitku_Base_Gateway extends WC_Payment_Gateway {
         $order = wc_get_order($order_id);
         
         try {
-            // Prepare transaction data
             $transaction_data = $this->prepare_transaction_data($order);
-            
-            // Request transaction to Duitku
             $response = $this->api->create_transaction($transaction_data);
             
             if (!$response || isset($response['error'])) {
                 throw new Exception(isset($response['error']) ? $response['error'] : 'Failed to create transaction');
             }
             
-            // Save VA number and other transaction details
             $this->save_transaction_details($order, $response);
-            
-            // Update order status
             $order->update_status('pending', __('Awaiting payment via ', 'woocommerce') . $this->title);
-            
-            // Empty cart
             WC()->cart->empty_cart();
             
-            // Return success
             return array(
                 'result' => 'success',
                 'redirect' => $this->get_return_url($order)
@@ -106,11 +91,10 @@ abstract class Duitku_Base_Gateway extends WC_Payment_Gateway {
         $amount = $order->get_total();
         $merchant_code = $this->merchant_settings['merchant_code'];
         $merchant_settings = get_option('duitku_settings', array());
-        $prefix = isset($merchant_settings['merchant_order_prefix']) ? $merchant_settings['merchant_order_prefix'] : 'DPAY-';
+        $prefix = isset($merchant_settings['merchant_order_prefix']) ? $merchant_settings['merchant_order_prefix'] : 'TRX-';
         $merchant_order_id = $prefix . $order->get_id();
         $api_key = $this->merchant_settings['api_key'];
         
-        // Generate signature
         $signature = md5($merchant_code . $merchant_order_id . $amount . $api_key);
         
         return array(
@@ -138,7 +122,6 @@ abstract class Duitku_Base_Gateway extends WC_Payment_Gateway {
     }
     
     protected function save_transaction_details($order, $response) {
-        // Get VA number from response (handle different response formats)
         $va_number = '';
         if (isset($response['vaNumber'])) {
             $va_number = $response['vaNumber'];
@@ -146,7 +129,6 @@ abstract class Duitku_Base_Gateway extends WC_Payment_Gateway {
             $va_number = $response['paymentCode'];
         }
         
-        // Save VA number as order meta
         $order->update_meta_data('_va_number', $va_number);
         $order->update_meta_data('_payment_expiry', date('Y-m-d H:i:s', strtotime("+{$this->merchant_settings['expiry_period']} minutes")));
         $order->save();
@@ -157,7 +139,6 @@ abstract class Duitku_Base_Gateway extends WC_Payment_Gateway {
         if ($order->get_payment_method() === $this->id) {
             $va_number = $order->get_meta('_va_number');
             $expiry = $order->get_meta('_payment_expiry');
-            
             $this->display_payment_instructions($order, $va_number, $expiry);
         }
     }
@@ -166,29 +147,18 @@ abstract class Duitku_Base_Gateway extends WC_Payment_Gateway {
         $expiry_timestamp = strtotime($expiry);
         $current_time = current_time('timestamp');
         
-        // Indonesian month names
         $bulan = array(
-            'January' => 'Januari',
-            'February' => 'Februari',
-            'March' => 'Maret',
-            'April' => 'April',
-            'May' => 'Mei',
-            'June' => 'Juni',
-            'July' => 'Juli',
-            'August' => 'Agustus',
-            'September' => 'September',
-            'October' => 'Oktober',
-            'November' => 'November',
-            'December' => 'Desember'
+            'January' => 'Januari', 'February' => 'Februari', 'March' => 'Maret',
+            'April' => 'April', 'May' => 'Mei', 'June' => 'Juni',
+            'July' => 'Juli', 'August' => 'Agustus', 'September' => 'September',
+            'October' => 'Oktober', 'November' => 'November', 'December' => 'Desember'
         );
         
-        // Format date with Indonesian month name
         $expiry_date = date('d F Y H:i', $expiry_timestamp);
         foreach ($bulan as $eng => $ind) {
             $expiry_date = str_replace($eng, $ind, $expiry_date);
         }
 
-        
         echo '<div class="duitku-payment-instructions">';
         
         if ($order->has_status('completed')) {
@@ -237,7 +207,6 @@ abstract class Duitku_Base_Gateway extends WC_Payment_Gateway {
         
         echo '</div>';
         
-        // Add JavaScript for auto-refresh and copy buttons
         echo '<script type="text/javascript">';
         echo 'var duitku_order_data = {';
         echo 'order_id: ' . $order->get_id() . ',';
@@ -250,17 +219,6 @@ abstract class Duitku_Base_Gateway extends WC_Payment_Gateway {
         echo '      var vaNumber = document.querySelector(".duitku-va-number").textContent.replace(/\\D/g, "");';
         echo '      navigator.clipboard.writeText(vaNumber).then(function() {';
         echo '        alert("Nomor Virtual Account berhasil disalin!");';
-        echo '      }, function() {';
-        echo '        alert("Gagal menyalin Nomor Virtual Account.");';
-        echo '      });';
-        echo '    });';
-        echo '  }';
-        echo '  var copyAmountBtn = document.getElementById("copy-amount-btn");';
-        echo '  if(copyAmountBtn) {';
-        echo '    copyAmountBtn.addEventListener("click", function() {';
-        echo '      var amountText = document.querySelector(".duitku-amount").textContent.replace(/\\D/g, "");';
-        echo '      navigator.clipboard.writeText(amountText).then(function() {';
-        echo '        alert("Nominal Pembayaran berhasil disalin!");';
         echo '      }, function() {';
         echo '        alert("Gagal menyalin Nominal Pembayaran.");';
         echo '      });';
@@ -300,16 +258,13 @@ abstract class Duitku_Base_Gateway extends WC_Payment_Gateway {
     }
     
     protected function get_callback_url() {
-        return add_query_arg('duitku_callback', '1', home_url('/'));
+        return home_url('/wc-api/wc_duitku_pg');
     }
     
     public function validate_merchant_settings() {
-        if (empty($this->merchant_settings['merchant_code']) || 
-            empty($this->merchant_settings['api_key']) || 
-            empty($this->merchant_settings['environment']) || 
-            empty($this->merchant_settings['expiry_period'])) {
-            return false;
-        }
-        return true;
+        return !empty($this->merchant_settings['merchant_code']) && 
+               !empty($this->merchant_settings['api_key']) && 
+               !empty($this->merchant_settings['environment']) && 
+               !empty($this->merchant_settings['expiry_period']);
     }
 }
