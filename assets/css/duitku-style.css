@@ -1,0 +1,282 @@
+/* Duitku Payment Gateway Styles */
+
+.duitku-payment-info {
+    background: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 15px;
+    margin: 10px 0;
+}
+
+.duitku-payment-info h3 {
+    margin-top: 0;
+    color: #333;
+    font-size: 16px;
+}
+
+.duitku-payment-info ul {
+    margin: 10px 0;
+    padding-left: 20px;
+}
+
+.duitku-payment-info li {
+    margin-bottom: 5px;
+    line-height: 1.4;
+}
+
+/* VA Number Display */
+.duitku-va-display {
+    background: #fff;
+    border: 2px solid #0073aa;
+    border-radius: 8px;
+    padding: 20px;
+    margin: 20px 0;
+    text-align: center;
+}
+
+.duitku-va-number {
+    font-size: 24px;
+    font-weight: bold;
+    color: #0073aa;
+    letter-spacing: 2px;
+    margin: 10px 0;
+    padding: 10px;
+    background: #f0f8ff;
+    border-radius: 5px;
+    border: 1px dashed #0073aa;
+}
+
+.duitku-amount {
+    font-size: 25px;
+    font-weight: bold;
+    color: #d63638;
+    margin: 10px 0;
+}
+
+.duitku-expiry {
+    color: #666;
+    font-size: 14px;
+    margin: 10px 0;
+}
+
+.duitku-countdown {
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    color: #856404;
+    padding: 10px;
+    border-radius: 5px;
+    margin: 10px 0;
+    text-align: center;
+}
+
+/* Payment Instructions */
+.duitku-instructions {
+    background: #e7f3ff;
+    border-left: 4px solid #0073aa;
+    padding: 15px;
+    margin: 15px 0;
+}
+
+.duitku-instructions h4 {
+    margin-top: 0;
+    color: #0073aa;
+}
+
+.duitku-instructions ol {
+    margin: 10px 0;
+    padding-left: 20px;
+}
+
+.duitku-instructions li {
+    margin-bottom: 8px;
+    line-height: 1.5;
+}
+
+/* Payment Status Messages */
+.duitku-payment-status {
+    padding: 15px;
+    border-radius: 5px;
+    margin: 15px 0;
+    text-align: center;
+}
+
+.duitku-payment-status.success {
+    background-color: #d4edda;
+    border: 1px solid #c3e6cb;
+    color: #155724;
+}
+
+.duitku-payment-status.pending {
+    background-color: #fff3cd;
+    border: 1px solid #ffeaa7;
+    color: #856404;
+}
+
+.duitku-payment-status.cancelled {
+    background-color: #f8d7da;
+    border: 1px solid #f5c6cb;
+    color: #721c24;
+}
+
+.duitku-payment-status.timeout {
+    background-color: #fff3cd;
+    border: 1px solid #ffeaa7;
+    color: #856404;
+}
+
+.duitku-payment-status h3 {
+    margin-top: 0;
+    margin-bottom: 10px;
+}
+
+/* Refresh Button */
+.duitku-refresh-status {
+    background: #0073aa;
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 14px;
+    margin: 10px 0;
+}
+
+.duitku-refresh-status:hover {
+    background: #005a87;
+}
+
+/* Copy Button */
+.duitku-copy-btn {
+    background: #28a745;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 9px;
+    margin-left: 10px;
+}
+
+.duitku-copy-btn:hover {
+    background: #218838;
+}
+
+/* Bank Logo */
+.duitku-bank-logo {
+    max-width: 60px;
+    height: auto;
+    margin-right: 10px;
+    vertical-align: middle;
+}
+
+/* Loading Animation */
+.duitku-loading {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #0073aa;
+    border-radius: 50%;
+    animation: duitku-spin 1s linear infinite;
+    margin-right: 10px;
+}
+
+@keyframes duitku-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .duitku-va-number {
+        font-size: 18px;
+        letter-spacing: 1px;
+    }
+    
+    .duitku-amount {
+        font-size: 16px;
+    }
+    
+    .duitku-payment-info {
+        padding: 10px;
+    }
+    
+    .duitku-va-display {
+        padding: 15px;
+    }
+}
+
+/* Admin Styles */
+.duitku-callback-info {
+    background: #f0f8ff;
+    border: 1px solid #0073aa;
+    border-radius: 5px;
+    padding: 15px;
+    margin: 15px 0;
+}
+
+.duitku-callback-info h4 {
+    color: #0073aa;
+    margin-top: 0;
+}
+
+.duitku-callback-info code {
+    background: #fff;
+    padding: 5px 8px;
+    border-radius: 3px;
+    border: 1px solid #ddd;
+    display: block;
+    margin: 10px 0;
+    word-break: break-all;
+}
+
+.duitku-callback-info ul {
+    columns: 2;
+    column-gap: 20px;
+}
+
+.duitku-callback-info li {
+    margin-bottom: 5px;
+    break-inside: avoid;
+}
+
+/* Thank You Page Styles */
+.woocommerce-order-received .duitku-va-display {
+    border-color: #28a745;
+}
+
+.woocommerce-order-received .duitku-va-number {
+    color: #28a745;
+    border-color: #28a745;
+    background: #f0fff0;
+}
+
+/* Error Messages */
+.duitku-error {
+    background: #f8d7da;
+    border: 1px solid #f5c6cb;
+    color: #721c24;
+    padding: 10px;
+    border-radius: 5px;
+    margin: 10px 0;
+}
+
+/* Success Messages */
+.duitku-success {
+    background: #d4edda;
+    border: 1px solid #c3e6cb;
+    color: #155724;
+    padding: 10px;
+    border-radius: 5px;
+    margin: 10px 0;
+}
+
+/* Info Messages */
+.duitku-info {
+    background: #d1ecf1;
+    border: 1px solid #bee5eb;
+    color: #0c5460;
+    padding: 10px;
+    border-radius: 5px;
+    margin: 10px 0;
+}
