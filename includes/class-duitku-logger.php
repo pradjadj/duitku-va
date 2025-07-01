@@ -20,7 +20,7 @@ class Duitku_Logger {
     private function __construct() {
         if (function_exists('wc_get_logger')) {
             $this->logger = wc_get_logger();
-            $this->logger_context = array('source' => 'duitku-va');
+            $this->logger_context = array('source' => 'duitku-va-gateway');
         } else {
             $this->logger = null;
         }

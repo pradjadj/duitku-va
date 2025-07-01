@@ -37,7 +37,7 @@ class Duitku_Admin_Settings {
     }
     
     public function get_settings() {
-        $callback_url = home_url('/wc-api/wc_duitku_pg');
+        $callback_url = add_query_arg('duitku_callback', '1', home_url('/'));
         $options = get_option($this->option_name, array());
         
         $settings = array(
@@ -95,7 +95,7 @@ class Duitku_Admin_Settings {
             'enable_logging' => array(
                 'name' => __('Enable Logging', 'woocommerce'),
                 'type' => 'select',
-                'desc' => __('Enable logging for Duitku transactions and errors.', 'woocommerce'),
+                'desc' => __('Enable logging for Duitku transactions and errors. Logs will be saved in WooCommerce System Status > Logs under "duitku" log file.', 'woocommerce'),
                 'id' => 'enable_logging',
                 'options' => array(
                     'yes' => __('Yes', 'woocommerce'),
@@ -105,27 +105,19 @@ class Duitku_Admin_Settings {
                 'desc_tip' => true,
                 'value' => isset($options['enable_logging']) ? $options['enable_logging'] : 'no',
             ),
-            
             'merchant_order_prefix' => array(
                 'name' => __('Merchant Order ID Prefix', 'woocommerce'),
                 'type' => 'text',
-                'desc' => __('Prefix to use for merchant order IDs. eg "TRX-12345"', 'woocommerce'),
+                'desc' => __('Prefix to use for merchant order IDs. eg "DPAY-12345"', 'woocommerce'),
                 'id' => 'merchant_order_prefix',
-                'default' => isset($options['merchant_order_prefix']) ? $options['merchant_order_prefix'] : 'TRX-',
+                'default' => isset($options['merchant_order_prefix']) ? $options['merchant_order_prefix'] : 'DPAY-',
                 'desc_tip' => true,
             ),
-            
             'callback_info' => array(
                 'name' => __('Callback URL Information', 'woocommerce'),
                 'type' => 'title',
                 'desc' => sprintf(
-                    __('Use this URL in your Duitku merchant dashboard for payment callbacks:<br><br>
-                    <strong>Callback URL:</strong><br>
-                    <code>%s</code><br><br>
-                    <strong>Important:</strong><br>
-                    - Make sure your server can receive POST requests<br>
-                    - Content-Type must be application/json<br>
-                    - No basic authentication required', 'woocommerce'),
+                    __('Use this URL in your Duitku merchant dashboard for payment callbacks: <pre><code>%s</code></pre>', 'woocommerce'),
                     esc_url($callback_url)
                 ),
                 'id' => 'duitku_callback_info'
